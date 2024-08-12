@@ -163,10 +163,12 @@ vehiculoCaro(Vehiculo):-
     marcaVehiculo(Vehiculo, Marca),
     marcaCara(Marca).
 
-vehiculoCaro(moto(_, SuspensionesExtras)):-
-    SuspensionesExtras > 3.
+vehiculoCaro(Vehiculo):-
+    suspencionesExtra(Vehiculo, Cant),
+    Cant >= 3. 
 
-vehiculoCaro(cuatri(_)).  % porque siempre llevan 4, 4 > 3
+suspencionesExtra(moto(_, X), X).
+suspencionesExtra(cuatri(_), 4).
 
 marcaCara(mini).
 marcaCara(toyota).
@@ -190,42 +192,39 @@ etapa(nazca,pisco,276).
 etapa(pisco,lima,29).
 
 % Parte A
+kmEntre(Origen, Dest, KM):-
+    etapa(Origen, Dest, KM). 
 
-kmEntre(L1, L2, _, KM):-
-    etapa(L1, L2, KM).
-
-kmEntre(L1, L2, _, KM):-
-    etapa(L2, L1, KM).
-
-kmEntre(L1, L2, Visitados, KM):-
-    etapa(L1, LIntermedia, KMIntermedio),
-    not(member(L1, Visitados)),
-    kmEntre(LIntermedia, L2, [L1 | Visitados], KMInter),
-    KM is KMInter + KMIntermedio.
-
-kmEntre(L1, L2, Visitados, KM):-
-    etapa(LIntermedia, L1, KMIntermedio),
-    not(member(L1, Visitados)),
-    kmEntre(LIntermedia, L2, Visitados, KMInter),
-    KM is KMInter + KMIntermedio.
+kmEntre(Origen, Dest, KM):-
+    etapa(Origen, Medio, KMParcial),
+    kmEntre(Medio, Dest, KMFaltante),
+    KM is KMParcial + KMFaltante. 
 
 % Parte B
 
-distanciaSinParar(camion(Items), Distancia):-
-    length(Items, CantItems),
-    Distancia is CantItems * 1000.
+distanciaSinParar(Vehiculo, Distancia):-
+    limiteDistancia(Vehiculo, Limite),
+    Distancia =< Limite.
 
-distanciaSinParar(Vehiculo, 2000):-
+limiteDistancia(Vehiculo, 2000):-
     vehiculoCaro(Vehiculo).
 
-distanciaSinParar(Vehiculo, 1800):-
+limiteDistancia(Vehiculo, 1800):-
+    marcaVehiculo(Vehiculo, _),
     not(vehiculoCaro(Vehiculo)).
+
+limiteDistancia(camion(Items), Limite):-
+    length(Items, Cant),
+    Limite is Cant * 1000.
 
 % Parte C
 
 destinoMasLejano(Vehiculo, Origen, Destino) :-
-    distanciaSinParar(Vehiculo, DistMax),
-    kmEntre(Origen, Destino, [], KM),
-    KM =< DistMax,
-    forall((kmEntre(Origen, OtroDest, [], KMOtro), OtroDest \= Destino, KMOtro =< DistMax),
-           KM >= KMOtro).
+    llegaSinParar(Vehiculo, Origen, Destino, KM),
+    forall((llegaSinParar(Vehiculo, Origen, Dest, OtroKM), Dest \= Destino),
+           KM >= OtroKM).
+
+llegaSinParar(Vehiculo, Origen, Dest, KM):-
+    kmEntre(Origen, Dest, KM),
+    distanciaSinParar(Vehiculo, KM).
+
